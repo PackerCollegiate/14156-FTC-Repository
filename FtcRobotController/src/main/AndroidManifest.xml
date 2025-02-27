@@ -14,7 +14,7 @@
     android:theme="@style/AppThemeRedRC"
     android:usesCleartextTraffic="true">
 
-    <!-- Indicates to the ControlHubUpdater what the latest version of the Control Hub is that this app supports -->
+    <!-- Indicates too the ControlHubUpdater what the latest version of the Control Hub is that this app supports -->
     <meta-data
         android:name="org.firstinspires.latestSupportedControlHubVersion"
         android:value="1" />
