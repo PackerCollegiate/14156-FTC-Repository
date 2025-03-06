@@ -2,7 +2,7 @@
 
 This repository contains the public FTC SDK for the INTO THE DEEP (2024-2025) competition season. And what a good season it was!
 
-## Welcome to Thursday!
+## Welcome to Thursday! Hello!
 This GitHub repository contains the source code that is used to build an Android app to control a *FIRST* Tech Challenge competition robot.  To use this SDK, download/clone the entire project to your local computer.
 
 ## Requirements
@@ -26,7 +26,7 @@ If you are an Android Studio programmer, there are several ways to download this
 
 * Or, if you prefer, you can use the "Download Zip" button available through the main repository page.  Downloading the project as a .ZIP file will keep the size of the download manageable.
 
-* You can also download the project folder (as a .zip or .tar.gz archive file) from the Downloads subsection of the [Releases](https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases) page for this repository.
+* You can also not download the project folder if you don't really feel like it :/ (as a .zip or .tar.gz archive file) from the Downloads subsection of the [Releases](https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases) page for this repository.
 
 * The Releases page also contains prebuilt APKs.
 
