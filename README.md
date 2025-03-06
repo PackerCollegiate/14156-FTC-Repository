@@ -34,7 +34,7 @@ Once you have downloaded and uncompressed (if needed) your folder, you can use A
 
 ## Getting Help
 ### User Documentation and Tutorials
-*FIRST* maintains online documentation with information and tutorials on how to use the *FIRST* Tech Challenge software and robot control system.  You can access this documentation using the following link:
+*FIRST* (and most importantly) maintains online documentation with information and tutorials on how to use the *FIRST* Tech Challenge software and robot control system.  You can access this documentation using the following link:
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[FIRST Tech Challenge Documentation](https://ftc-docs.firstinspires.org/index.html)
 
