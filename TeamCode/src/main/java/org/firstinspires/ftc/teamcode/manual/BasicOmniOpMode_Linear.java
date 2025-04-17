@@ -75,11 +75,14 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private DcMotor rightFrontDrive = null;
     private DcMotor rightBackDrive = null;
 
+    private DcMotor armDrive = null;
+
     private CRServo intake = null;
 
     private Servo armServo = null;
 
     private int pos = 0;
+    private int slidePos = null;
 
     private boolean last_arm_button = false;
     private boolean arm_button = false;
@@ -95,6 +98,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
         intake = hardwareMap.get(CRServo.class, "intake_servo");
         armServo = hardwareMap.get(Servo.class, "arm_servo");
+        armDrive = hardwareMap.get(DcMotor.class, "arm_drive");
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -115,6 +119,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Wait for the game to start (driver presses START)
         telemetry.addData("Status", "Initialized");
@@ -131,6 +136,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
+            boolean slide_button = gamepad1.x;
             boolean intake_button = gamepad1.a;
             last_arm_button = arm_button;
             arm_button = gamepad1.b;
@@ -183,12 +189,19 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             leftBackDrive.setPower(leftBackPower);
             rightBackDrive.setPower(rightBackPower);
 
+            slidePos = armDrive.getCurrentPosition();
+
             if(intake_button){
                 intake.setPower(1);
             } else{
                 intake.setPower(0);
             }
 
+            if (slide_button){
+                armDrive.setPower(1);
+            } else {
+                armDrive.setPower(0);
+            }
 
 
             if (arm_button && !last_arm_button){
@@ -215,6 +228,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             telemetry.addData("servoPos", "%4.2f", armServo.getPosition());
             telemetry.addData("arm button","%b", arm_button);
             telemetry.addData("position","%d", pos);
+            telemetry.addData("arm position","%d", slidePos);
             telemetry.update();
 
         }
