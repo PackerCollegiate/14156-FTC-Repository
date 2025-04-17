@@ -79,6 +79,11 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
     private Servo armServo = null;
 
+    private int pos = 0;
+
+    private boolean last_arm_button = false;
+    private boolean arm_button = false;
+
     @Override
     public void runOpMode() {
 
@@ -127,11 +132,13 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
             boolean intake_button = gamepad1.a;
+            last_arm_button = arm_button;
+            arm_button = gamepad1.b;
 
 //            boolean pos1 = gamepad1.dpad_left;
 //            boolean pos2 = gamepad1.dpad_down;
 //            boolean pos3 = gamepad1.dpad_right;
-            int pos = 0;
+
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
@@ -182,12 +189,23 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
                 intake.setPower(0);
             }
 
-            if (gamepad1.dpad_left && pos < 3){
-                pos += 1
-            } elif
-            if(pos1){
-                armServo.setPosition(0.5);
+
+
+            if (arm_button && !last_arm_button){
+                pos += 1;
             }
+            if (pos == 3){
+                pos = 0;
+            }
+
+            if (pos == 0){
+                armServo.setPosition(.2);
+            } else if (pos == 1) {
+                armServo.setPosition(.5);
+            } else if (pos == 2) {
+                armServo.setPosition(.8);
+            }
+
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
@@ -195,6 +213,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
             telemetry.addData("intaking", "%b", intake_button);
             telemetry.addData("servoPos", "%4.2f", armServo.getPosition());
+            telemetry.addData("arm button","%b", arm_button);
+            telemetry.addData("position","%d", pos);
             telemetry.update();
 
         }
