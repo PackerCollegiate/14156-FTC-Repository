@@ -82,10 +82,13 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private Servo armServo = null;
 
     private int pos = 0;
-    private int slidePos = null;
+    private int slidePos = -999;
 
     private boolean last_arm_button = false;
     private boolean arm_button = false;
+
+    private boolean slide_button = false;
+    private boolean slide_buttonBack = false;
 
     @Override
     public void runOpMode() {
@@ -114,6 +117,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        armDrive.setDirection(DcMotor.Direction.REVERSE);
 
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -133,13 +137,15 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double max;
 
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-            double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-            double lateral =  gamepad1.left_stick_x;
-            double yaw     =  gamepad1.right_stick_x;
+            double axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+            double lateral = gamepad1.left_stick_x;
+            double yaw = gamepad1.right_stick_x;
             boolean slide_button = gamepad1.x;
+            boolean slide_buttonBack = gamepad1.y;
             boolean intake_button = gamepad1.a;
             last_arm_button = arm_button;
             arm_button = gamepad1.b;
+
 
 //            boolean pos1 = gamepad1.dpad_left;
 //            boolean pos2 = gamepad1.dpad_down;
@@ -148,10 +154,10 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
-            double leftFrontPower  = axial + lateral + yaw;
+            double leftFrontPower = axial + lateral + yaw;
             double rightFrontPower = axial - lateral - yaw;
-            double leftBackPower   = axial - lateral + yaw;
-            double rightBackPower  = axial + lateral - yaw;
+            double leftBackPower = axial - lateral + yaw;
+            double rightBackPower = axial + lateral - yaw;
 
             // Normalize the values so no wheel power exceeds 100%
             // This ensures that the robot maintains the desired motion.
@@ -160,10 +166,10 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             max = Math.max(max, Math.abs(rightBackPower));
 
             if (max > 1.0) {
-                leftFrontPower  /= max;
+                leftFrontPower /= max;
                 rightFrontPower /= max;
-                leftBackPower   /= max;
-                rightBackPower  /= max;
+                leftBackPower /= max;
+                rightBackPower /= max;
             }
 
             // This is test code:
@@ -191,27 +197,30 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
             slidePos = armDrive.getCurrentPosition();
 
-            if(intake_button){
+            if (intake_button) {
                 intake.setPower(1);
-            } else{
+            } else {
                 intake.setPower(0);
             }
 
-            if (slide_button){
+
+            if (slide_button && slidePos < 2000 && !slide_buttonBack) {
                 armDrive.setPower(1);
+            } else if (slide_buttonBack && slidePos > 50 && !slide_button) {
+                armDrive.setPower(-1);
             } else {
                 armDrive.setPower(0);
             }
 
 
-            if (arm_button && !last_arm_button){
+            if (arm_button && !last_arm_button) {
                 pos += 1;
             }
-            if (pos == 3){
+            if (pos == 3) {
                 pos = 0;
             }
 
-            if (pos == 0){
+            if (pos == 0) {
                 armServo.setPosition(.2);
             } else if (pos == 1) {
                 armServo.setPosition(.5);
@@ -222,14 +231,15 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
-            telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
-            telemetry.addData("intaking", "%b", intake_button);
+//            telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
+//            telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+//            telemetry.addData("intaking", "%b", intake_button);
             telemetry.addData("servoPos", "%4.2f", armServo.getPosition());
-            telemetry.addData("arm button","%b", arm_button);
-            telemetry.addData("position","%d", pos);
-            telemetry.addData("arm position","%d", slidePos);
+            telemetry.addData("arm button", "%b", arm_button);
+            telemetry.addData("position", "%d", pos);
+            telemetry.addData("arm position", "%d", slidePos);
             telemetry.update();
-
         }
-    }}
+
+    }
+}
