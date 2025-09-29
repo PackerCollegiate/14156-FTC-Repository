@@ -58,8 +58,6 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftSlides.setDirection(DcMotor.Direction.FORWARD);
-        rightSlides.setDirection(DcMotor.Direction.FORWARD);
 
         // ----- Vision init -----
         initAprilTagWebcam1();
