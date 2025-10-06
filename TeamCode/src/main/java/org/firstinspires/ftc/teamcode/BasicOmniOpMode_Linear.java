@@ -154,7 +154,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             leftBackDrive.setPower(leftBackPower);
             rightBackDrive.setPower(rightBackPower);
 
-            // ------------------- Telemetry -------------------
+            // -------------------- Telemetry --------------------
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Target Tag", targetTagId == null ? "None" : targetTagId);
             telemetry.addData("Front L/R", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
