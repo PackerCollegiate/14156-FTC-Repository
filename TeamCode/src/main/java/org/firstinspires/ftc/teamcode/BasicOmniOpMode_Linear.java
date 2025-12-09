@@ -1,3 +1,5 @@
+
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -6,9 +8,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.dfrobot.HuskyLens.Block;
-
 @TeleOp(name="HuskyLens: Mecanum + Auto Aim", group="Linear OpMode")
-public class BasicOmniHusky_Linear extends LinearOpMode {
+public class BasicOmniOpMode_Linear extends LinearOpMode {
 
     // Drive motors
     private DcMotor leftFrontDrive, leftBackDrive, rightFrontDrive, rightBackDrive;
