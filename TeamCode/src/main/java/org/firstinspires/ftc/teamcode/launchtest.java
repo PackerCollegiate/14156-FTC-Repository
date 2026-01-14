@@ -57,7 +57,7 @@ public class launchtest extends LinearOpMode {
                 if (detection != null){
                     distance = currentDetections.get(0).ftcPose.range;
                     elevation = currentDetections.get(0).ftcPose.elevation;
-                    flatdistance = distance * (Math.cos(elevation));
+                    flatdistance = (distance * (Math.cos(Math.toRadians(elevation)))+2);
                     rpmTarget = distanceToRPM(flatdistance);
                     telemetry.addData("Distance (in)", "%.1f", flatdistance);
                 }
