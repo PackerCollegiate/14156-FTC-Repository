@@ -25,10 +25,10 @@ public class launchtest extends LinearOpMode {
 
     private double rpmTarget = 0;
 
-    private double kP = 0.005;   // start small, increase slowly
-    private double kD = 0.006;   // derivative (damps oscillations)
-    private double kF = 0.00012;  // feedforward gain (power per ticks/sec)
-    private double offsetF = 0.1; // base power offset just to start spinning
+    private double kP = 0.5;
+    private double kD = 0.00005;
+    private double kF = 0.00005;
+    private double offsetF = 0.07;
 
     private double previousError = 0;
 
@@ -70,25 +70,17 @@ public class launchtest extends LinearOpMode {
                 }
             }
 
-            // Push telemetry to the Driver Station.
-            telemetry.update();
-
-
-
-            // Share the CPU.
-            sleep(20);
-
-
-            // Convert RPM → ticks/sec
+            // Read actual RPM
             double velocityTarget = (rpmTarget / 60.0) * 28.0;
 
-            // Read actual RPM
-            double actualRPM = (launchMotor.getVelocity() * 60.0) / 28.0;
+            double actualVelocity = launchMotor.getVelocity();
+            double actualRPM = (actualVelocity * 60.0) / 28.0;
 
             // Spool motor
             if (triggerPress > 0.8) {
                 double power = updatePDF(velocityTarget, actualRPM, dt);
                 launchMotor.setPower(power);
+                telemetry.addData("Power", "%.1f", power);
             } else {
                 launchMotor.setPower(0);
                 previousError = 0;
