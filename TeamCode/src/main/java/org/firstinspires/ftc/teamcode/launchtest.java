@@ -25,10 +25,10 @@ public class launchtest extends LinearOpMode {
 
     private double rpmTarget = 0;
 
-    private double kP = 0.5;
-    private double kD = 0.00005;
-    private double kF = 0.00005;
-    private double offsetF = 0.07;
+    private double kP = 0.006;//how fast, acceleration
+    private double kD = 0.00002;//slow down before gets there
+    private double kF = 0.00043;//static friction
+    private double offsetF = 0.0;
 
     private double previousError = 0;
 
@@ -64,7 +64,7 @@ public class launchtest extends LinearOpMode {
                 if (detection != null){
                     distance = currentDetections.get(0).ftcPose.range;
                     elevation = currentDetections.get(0).ftcPose.elevation;
-                    flatdistance = (distance * (Math.cos(Math.toRadians(elevation)))+2);
+                    flatdistance = (distance * (Math.cos(Math.toRadians(elevation)))+3.5);
                     rpmTarget = distanceToRPM(flatdistance);
                     telemetry.addData("Distance (in)", "%.1f", flatdistance);
                 }
@@ -125,8 +125,13 @@ public class launchtest extends LinearOpMode {
 
         // Step through the list of detections and display info for each one.
         for (AprilTagDetection detection : currentDetections) {
-            if (detection != null){
-                telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+            try {
+                if (detection != null) {
+                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                }
+            } catch (Exception e) {
+                telemetry.addLine(String.format("Error"));
+
             }
         }   // end for() loop
     }   // end method telemetryAprilTag()
@@ -135,33 +140,34 @@ public class launchtest extends LinearOpMode {
         return (10.63 * d) + 2197;
     }
 
-    private double updatePDF(double target, double actual, double dt) {
+    private double updatePDF(double targetTicksPerSec, double actualRPM, double dt) {
+
+        // Convert actual RPM → ticks/sec so units match
+        double actualTicksPerSec = (actualRPM / 60.0) * 28.0;
 
         // Error in ticks/sec
-        double error = target - actual;
+        double error = targetTicksPerSec - actualTicksPerSec;
 
-        // Proportional term
+        // --- PID terms ---
         double P = kP * error;
 
-        // Derivative term (rate of change of error)
-        double derivative = 0;
+        double D = 0;
         if (dt > 0) {
-            derivative = (error - previousError) / dt;
+            D = kD * (error - previousError) / dt;
         }
-        double D = kD * derivative;
 
-        // Feedforward:
-        // We assume power is roughly linear with required velocity.
-        // F is our "best guess" at the power needed for this target speed.
-        double F = (kF * target) + offsetF;
+        // Feedforward based on target velocity
+        double F = (kF * targetTicksPerSec) + offsetF;
 
-        // Save error for next loop
         previousError = error;
 
-        // Total output power
         double output = P + D + F;
+
+        // HARD CLAMP (critical)
+        output = Math.max(-1.0, Math.min(1.0, output));
 
         return output;
     }
+
 
 }
