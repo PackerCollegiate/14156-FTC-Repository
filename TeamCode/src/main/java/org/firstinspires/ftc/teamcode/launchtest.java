@@ -25,10 +25,12 @@ public class launchtest extends LinearOpMode {
 
     private double rpmTarget = 0;
 
-    // Quadratic fit parameters from regression
-    private final double A = -0.0000345;
-    private final double B = 0.228;
-    private final double C = -289.5;
+    private double kP = 0.5;
+    private double kD = 0.00005;
+    private double kF = 0.00005;
+    private double offsetF = 0.07;
+
+    private double previousError = 0;
 
     @Override
     public void runOpMode() {
@@ -45,8 +47,13 @@ public class launchtest extends LinearOpMode {
         runtime.reset();
 
         float triggerPress = 0;
+        double lastTime = runtime.seconds();
+
 
         while (opModeIsActive()) {
+            double now = runtime.seconds();
+            double dt = now - lastTime;
+            lastTime = now;
             double distance;
             double elevation;
             double flatdistance;
@@ -63,29 +70,20 @@ public class launchtest extends LinearOpMode {
                 }
             }
 
-            // Push telemetry to the Driver Station.
-            telemetry.update();
-
-
-
-            // Share the CPU.
-            sleep(20);
-
-
-            // Compute RPM from quadratic model
-
-
-            // Convert RPM → ticks/sec
+            // Read actual RPM
             double velocityTarget = (rpmTarget / 60.0) * 28.0;
 
-            // Read actual RPM
-            double actualRPM = (launchMotor.getVelocity() * 60.0) / 28.0;
+            double actualVelocity = launchMotor.getVelocity();
+            double actualRPM = (actualVelocity * 60.0) / 28.0;
 
             // Spool motor
             if (triggerPress > 0.8) {
-                launchMotor.setVelocity(velocityTarget);
+                double power = updatePDF(velocityTarget, actualRPM, dt);
+                launchMotor.setPower(power);
+                telemetry.addData("Power", "%.1f", power);
             } else {
                 launchMotor.setPower(0);
+                previousError = 0;
             }
 
             telemetry.addData("RPM Target", "%.1f", rpmTarget);
@@ -94,9 +92,6 @@ public class launchtest extends LinearOpMode {
         }
     }
 
-    private double distanceToRPM(double d) {
-        return((10.63*d) + 2197);
-    }
     private void initAprilTag() {
         aprilTag = new AprilTagProcessor.Builder()
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
@@ -135,4 +130,38 @@ public class launchtest extends LinearOpMode {
             }
         }   // end for() loop
     }   // end method telemetryAprilTag()
+
+    private  double distanceToRPM(double d) {
+        return (10.63 * d) + 2197;
+    }
+
+    private double updatePDF(double target, double actual, double dt) {
+
+        // Error in ticks/sec
+        double error = target - actual;
+
+        // Proportional term
+        double P = kP * error;
+
+        // Derivative term (rate of change of error)
+        double derivative = 0;
+        if (dt > 0) {
+            derivative = (error - previousError) / dt;
+        }
+        double D = kD * derivative;
+
+        // Feedforward:
+        // We assume power is roughly linear with required velocity.
+        // F is our "best guess" at the power needed for this target speed.
+        double F = (kF * target) + offsetF;
+
+        // Save error for next loop
+        previousError = error;
+
+        // Total output power
+        double output = P + D + F;
+
+        return output;
+    }
+
 }
