@@ -22,6 +22,11 @@ public class launchtest extends LinearOpMode {
 
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotorEx launchMotor = null;
+    private DcMotorEx frontLeftDrive = null;
+    private DcMotorEx frontRightDrive = null;
+    private DcMotorEx backLeftDrive = null;
+    private DcMotorEx backRightDrive =  null;
+
 
     private double rpmTarget = 0;
 
@@ -36,6 +41,15 @@ public class launchtest extends LinearOpMode {
     public void runOpMode() {
         initAprilTag();
         launchMotor = hardwareMap.get(DcMotorEx.class, "launch_motor");
+        frontLeftDrive = hardwareMap.get(DcMotorEx.class, "front_left_drive");
+        backLeftDrive = hardwareMap.get(DcMotorEx.class, "back_left_drive");
+        frontRightDrive = hardwareMap.get(DcMotorEx.class, "front_right_drive");
+        backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
+
+        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -51,6 +65,40 @@ public class launchtest extends LinearOpMode {
 
 
         while (opModeIsActive()) {
+
+            double max;
+
+            double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+            double lateral =  gamepad1.left_stick_x;
+            double yaw     =  gamepad1.right_stick_x;
+
+            // Combine the joystick requests for each axis-motion to determine each wheel's power.
+            // Set up a variable for each drive wheel to save the power level for telemetry.
+            double frontLeftPower  = axial + lateral + yaw;
+            double frontRightPower = axial - lateral - yaw;
+            double backLeftPower   = axial - lateral + yaw;
+            double backRightPower  = axial + lateral - yaw;
+
+            // Normalize the values so no wheel power exceeds 100%
+            // This ensures that the robot maintains the desired motion.
+            max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+            max = Math.max(max, Math.abs(backLeftPower));
+            max = Math.max(max, Math.abs(backRightPower));
+
+            if (max > 1.0) {
+                frontLeftPower  /= max;
+                frontRightPower /= max;
+                backLeftPower   /= max;
+                backRightPower  /= max;
+            }
+
+            frontLeftDrive.setPower(frontLeftPower);
+            frontRightDrive.setPower(frontRightPower);
+            backLeftDrive.setPower(backLeftPower);
+            backRightDrive.setPower(backRightPower);
+
+
+
             double now = runtime.seconds();
             double dt = now - lastTime;
             lastTime = now;
