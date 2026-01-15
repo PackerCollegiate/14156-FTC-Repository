@@ -67,7 +67,6 @@ public class launchtest extends LinearOpMode {
         while (opModeIsActive()) {
 
             double max;
-
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
