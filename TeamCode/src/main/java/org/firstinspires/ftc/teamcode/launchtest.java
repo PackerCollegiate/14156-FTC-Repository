@@ -4,6 +4,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -12,9 +15,10 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
+
 import java.util.List;
 
-@TeleOp(name="Launch Test Auto RPM", group="Linear OpMode")
+@TeleOp(name="LinearOp Robot Main", group="Linear OpMode")
 public class launchtest extends LinearOpMode {
     private static final boolean USE_WEBCAM = true;
     private AprilTagProcessor aprilTag;
@@ -26,7 +30,7 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx frontRightDrive = null;
     private DcMotorEx backLeftDrive = null;
     private DcMotorEx backRightDrive =  null;
-
+//    private DcMotorEx frontIntake = null;
 
     private double rpmTarget = 0;
 
@@ -39,12 +43,15 @@ public class launchtest extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+
         initAprilTag();
         launchMotor = hardwareMap.get(DcMotorEx.class, "launch_motor");
         frontLeftDrive = hardwareMap.get(DcMotorEx.class, "front_left_drive");
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "back_left_drive");
         frontRightDrive = hardwareMap.get(DcMotorEx.class, "front_right_drive");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
+//        frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
+
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -52,6 +59,7 @@ public class launchtest extends LinearOpMode {
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        frontIntake.setDirection(DcMotor.Direction.FORWARD);
 
 
         telemetry.addData("Status", "Initialized!");
@@ -96,6 +104,13 @@ public class launchtest extends LinearOpMode {
             backLeftDrive.setPower(backLeftPower);
             backRightDrive.setPower(backRightPower);
 
+//            double IntakePower = gamepad1.left_trigger;
+//
+//            if (IntakePower > 0.8) {
+//                frontIntake.setPower(0.8);
+//            } else {
+//                frontIntake.setPower(0);
+//            }
 
 
             double now = runtime.seconds();
