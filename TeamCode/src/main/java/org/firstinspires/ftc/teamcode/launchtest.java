@@ -110,7 +110,7 @@ public class launchtest extends LinearOpMode {
             double IntakePower = gamepad1.left_trigger;
 
             if (IntakePower > 0.8) {
-                frontIntake.setPower(0.8);
+                frontIntake.setPower(1.0);
             } else {
                 frontIntake.setPower(0);
             }
