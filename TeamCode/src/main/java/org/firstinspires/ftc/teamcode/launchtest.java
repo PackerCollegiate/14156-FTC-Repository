@@ -30,7 +30,7 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx frontRightDrive = null;
     private DcMotorEx backLeftDrive = null;
     private DcMotorEx backRightDrive =  null;
-//    private DcMotorEx frontIntake = null;
+    private DcMotorEx frontIntake = null;
 
     private double rpmTarget = 0;
 
@@ -50,7 +50,7 @@ public class launchtest extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "back_left_drive");
         frontRightDrive = hardwareMap.get(DcMotorEx.class, "front_right_drive");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
-//        frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
+        frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
 
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -59,7 +59,7 @@ public class launchtest extends LinearOpMode {
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-//        frontIntake.setDirection(DcMotor.Direction.FORWARD);
+        frontIntake.setDirection(DcMotor.Direction.REVERSE);
 
 
         telemetry.addData("Status", "Initialized!");
@@ -104,13 +104,13 @@ public class launchtest extends LinearOpMode {
             backLeftDrive.setPower(backLeftPower);
             backRightDrive.setPower(backRightPower);
 
-//            double IntakePower = gamepad1.left_trigger;
-//
-//            if (IntakePower > 0.8) {
-//                frontIntake.setPower(0.8);
-//            } else {
-//                frontIntake.setPower(0);
-//            }
+            double IntakePower = gamepad1.left_trigger;
+
+            if (IntakePower > 0.8) {
+                frontIntake.setPower(0.8);
+            } else {
+                frontIntake.setPower(0);
+            }
 
 
             double now = runtime.seconds();
