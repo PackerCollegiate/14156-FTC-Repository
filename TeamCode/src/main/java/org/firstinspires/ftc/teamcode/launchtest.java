@@ -32,6 +32,8 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx backRightDrive =  null;
     private DcMotorEx frontIntake = null;
 
+    private CRServo servoIntake = null;
+
     private double rpmTarget = 0;
 
     private double kP = 0.006;//how fast, acceleration
@@ -51,6 +53,7 @@ public class launchtest extends LinearOpMode {
         frontRightDrive = hardwareMap.get(DcMotorEx.class, "front_right_drive");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
         frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
+        servoIntake = hardwareMap.get(CRServo.class, "servo_intake");
 
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -150,6 +153,17 @@ public class launchtest extends LinearOpMode {
 
             telemetry.addData("RPM Target", "%.1f", rpmTarget);
             telemetry.addData("RPM Actual", "%.1f", actualRPM);
+
+            if(actualRPM > 0.95*rpmTarget) {
+
+                servoIntake.setPower(0.8);
+
+            } else {
+                servoIntake.setPower(0);
+            }
+
+
+
             telemetry.update();
         }
     }
