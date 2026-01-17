@@ -108,12 +108,19 @@ public class launchtest extends LinearOpMode {
             backRightDrive.setPower(backRightPower);
 
             double IntakePower = gamepad1.left_trigger;
+            boolean Eject = gamepad1.left_bumper;
+
+            if (Eject) {
+                frontIntake.setPower(-1.0);
+                servoIntake.setPower(-1.0);
+            }
 
             if (IntakePower > 0.8) {
                 frontIntake.setPower(1.0);
             } else {
                 frontIntake.setPower(0);
             }
+
 
 
             double now = runtime.seconds();
@@ -154,9 +161,9 @@ public class launchtest extends LinearOpMode {
             telemetry.addData("RPM Target", "%.1f", rpmTarget);
             telemetry.addData("RPM Actual", "%.1f", actualRPM);
 
-            if(actualRPM > 0.95*rpmTarget) {
+            if(actualRPM > 0.65*rpmTarget) {
 
-                servoIntake.setPower(0.8);
+                servoIntake.setPower(1.0);
 
             } else {
                 servoIntake.setPower(0);
