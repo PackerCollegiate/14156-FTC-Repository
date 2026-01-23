@@ -154,7 +154,7 @@ public class launchtest extends LinearOpMode {
                 launchMotor.setPower(power);
                 telemetry.addData("Power", "%.1f", power);
             } else {
-                launchMotor.setPower(0);
+                launchMotor.setPower(0); //here we can adjust so motor is spooled always
                 previousError = 0;
             }
 
