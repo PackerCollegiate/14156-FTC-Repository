@@ -72,6 +72,7 @@ public class launchtest extends LinearOpMode {
         runtime.reset();
 
         float triggerPress = 0;
+        float lastTriggerPress = 0;
         double lastTime = runtime.seconds();
 
 
@@ -162,14 +163,12 @@ public class launchtest extends LinearOpMode {
             telemetry.addData("RPM Actual", "%.1f", actualRPM);
 
             if(actualRPM > 0.65*rpmTarget) {
-
                 servoIntake.setPower(1.0);
-
-            } else {
-                servoIntake.setPower(0);
+                } else {
+                servoIntake. setPower(0);
             }
 
-
+            triggerPress = lastTriggerPress;
 
             telemetry.update();
         }
