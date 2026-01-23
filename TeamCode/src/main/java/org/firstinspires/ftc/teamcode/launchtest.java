@@ -72,7 +72,6 @@ public class launchtest extends LinearOpMode {
         runtime.reset();
 
         float triggerPress = 0;
-        float lastTriggerPress = 0;
         double lastTime = runtime.seconds();
 
 
@@ -167,8 +166,6 @@ public class launchtest extends LinearOpMode {
                 } else {
                 servoIntake. setPower(0);
             }
-
-            triggerPress = lastTriggerPress;
 
             telemetry.update();
         }
