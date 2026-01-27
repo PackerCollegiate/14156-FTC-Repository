@@ -15,7 +15,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
-
 import java.util.List;
 
 @TeleOp(name="LinearOp Robot Main", group="Linear OpMode")
@@ -23,7 +22,6 @@ public class launchtest extends LinearOpMode {
     private static final boolean USE_WEBCAM = true;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
-
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotorEx launchMotor = null;
     private DcMotorEx frontLeftDrive = null;
@@ -31,17 +29,29 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx backLeftDrive = null;
     private DcMotorEx backRightDrive =  null;
     private DcMotorEx frontIntake = null;
-
     private CRServo servoIntake = null;
-
     private double rpmTarget = 0;
-
     private double kP = 0.006;//how fast, acceleration
     private double kD = 0.00002;//slow down before gets there
     private double kF = 0.00043;//static friction
     private double offsetF = 0.0;
-
     private double previousError = 0;
+    private boolean lastSpoolUp = false;
+    private boolean SpoolOn = false;
+    private double aimingKp = 0.02; //Coefficient for autoAlign, can be modified
+    private enum IntakeState {
+        idle,
+        firstBall,
+        recovery,
+        secondBall
+    }
+    private IntakeState intakeState = IntakeState.idle;
+    private ElapsedTime ballTimer = new ElapsedTime();
+    private ElapsedTime recoveryTimer = new ElapsedTime();
+    private double pushTime = 2.0; //Seconds for ball to be pushed, can be modified
+    private double recoverTime = 1.0; //Servo rest time, can be modified
+    private double idleRPM = 1000; //idleRPM setting, can be modified
+
 
     @Override
     public void runOpMode() {
@@ -54,7 +64,6 @@ public class launchtest extends LinearOpMode {
         backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
         frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
         servoIntake = hardwareMap.get(CRServo.class, "servo_intake");
-
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -77,52 +86,7 @@ public class launchtest extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            double max;
-            double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-            double lateral =  gamepad1.left_stick_x;
-            double yaw     =  gamepad1.right_stick_x;
-
-            // Combine the joystick requests for each axis-motion to determine each wheel's power.
-            // Set up a variable for each drive wheel to save the power level for telemetry.
-            double frontLeftPower  = axial + lateral + yaw;
-            double frontRightPower = axial - lateral - yaw;
-            double backLeftPower   = axial - lateral + yaw;
-            double backRightPower  = axial + lateral - yaw;
-
-            // Normalize the values so no wheel power exceeds 100%
-            // This ensures that the robot maintains the desired motion.
-            max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
-            max = Math.max(max, Math.abs(backLeftPower));
-            max = Math.max(max, Math.abs(backRightPower));
-
-            if (max > 1.0) {
-                frontLeftPower  /= max;
-                frontRightPower /= max;
-                backLeftPower   /= max;
-                backRightPower  /= max;
-            }
-
-            frontLeftDrive.setPower(frontLeftPower);
-            frontRightDrive.setPower(frontRightPower);
-            backLeftDrive.setPower(backLeftPower);
-            backRightDrive.setPower(backRightPower);
-
-            double IntakePower = gamepad1.left_trigger;
-            boolean Eject = gamepad1.left_bumper;
-
-            if (Eject) {
-                frontIntake.setPower(-1.0);
-                servoIntake.setPower(-1.0);
-            }
-
-            if (IntakePower > 0.8) {
-                frontIntake.setPower(1.0);
-            } else {
-                frontIntake.setPower(0);
-            }
-
-
-
+            // Camera Reading
             double now = runtime.seconds();
             double dt = now - lastTime;
             lastTime = now;
@@ -142,31 +106,145 @@ public class launchtest extends LinearOpMode {
                 }
             }
 
-            // Read actual RPM
-            double velocityTarget = (rpmTarget / 60.0) * 28.0;
 
+            // Driving Control
+            double max;
+            double axial   = -gamepad1.left_stick_y;
+            double lateral =  gamepad1.left_stick_x;
+            double yaw     =  gamepad1.right_stick_x;
+
+            // Auto-Alignment
+            if (triggerPress > 0.8 && !currentDetections.isEmpty()) {
+                AprilTagDetection detection = currentDetections.get(0);
+                double bearing = detection.ftcPose.bearing;
+
+                if (Math.abs(bearing) > 1.0) {
+                    double correction = -bearing * aimingKp;
+                    yaw += correction;
+                }
+            }
+
+            double frontLeftPower  = axial + lateral + yaw;
+            double frontRightPower = axial - lateral - yaw;
+            double backLeftPower   = axial - lateral + yaw;
+            double backRightPower  = axial + lateral - yaw;
+
+            max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+            max = Math.max(max, Math.abs(backLeftPower));
+            max = Math.max(max, Math.abs(backRightPower));
+
+            if (max > 1.0) {
+                frontLeftPower  /= max;
+                frontRightPower /= max;
+                backLeftPower   /= max;
+                backRightPower  /= max;
+            }
+
+            frontLeftDrive.setPower(frontLeftPower);
+            frontRightDrive.setPower(frontRightPower);
+            backLeftDrive.setPower(backLeftPower);
+            backRightDrive.setPower(backRightPower);
+
+            // Mid-Stage Intake Variables
+            double IntakePower = gamepad1.left_trigger;
+            boolean Eject = gamepad1.left_bumper;
+            boolean SpoolUp = gamepad1.a;
+
+            // Intake Control
+            if (IntakePower > 0.8) {
+                frontIntake.setPower(1.0);
+            } else if (Eject) {
+                frontIntake.setPower(-1.0);
+            } else {
+                frontIntake.setPower(0);
+            }
+
+            // RPM Conversions
+            double velocityTarget = (rpmTarget / 60.0) * 28.0;
             double actualVelocity = launchMotor.getVelocity();
             double actualRPM = (actualVelocity * 60.0) / 28.0;
 
-            // Spool motor
+            // Idle RPM Toggle Control
+            if (SpoolUp && !lastSpoolUp) {
+                SpoolOn = !SpoolOn;
+            }
+
+            // Launch Motor Control
             if (triggerPress > 0.8) {
                 double power = updatePDF(velocityTarget, actualRPM, dt);
                 launchMotor.setPower(power);
                 telemetry.addData("Power", "%.1f", power);
+            } else if (SpoolOn) {
+                double idleTarget = (idleRPM / 60) * 28.0;
+                double power = updatePDF(idleTarget, actualRPM, dt);
+                launchMotor.setPower(power);
+                telemetry.addData("Power (idle)", "%.1f", power);
             } else {
-                launchMotor.setPower(0); //here we can adjust so motor is spooled always
+                launchMotor.setPower(0);
                 previousError = 0;
             }
+
 
             telemetry.addData("RPM Target", "%.1f", rpmTarget);
             telemetry.addData("RPM Actual", "%.1f", actualRPM);
 
-            if(actualRPM > 0.65*rpmTarget) {
+            // Mid-Stage Intake Control
+            if (IntakePower > 0.8) { // Might take this out
                 servoIntake.setPower(1.0);
-                } else {
-                servoIntake. setPower(0);
+                intakeState = intakeState.idle;
+            } else if (Eject) {
+                servoIntake.setPower(-1.0);
+                intakeState = intakeState.idle;
+            }
+            else if (triggerPress > 0.8) {
+                switch (intakeState) {
+                    case idle:
+                        if (actualRPM > 0.9 * rpmTarget) {
+                            // Start pushing first ball
+                            intakeState = intakeState.firstBall;
+                            ballTimer.reset();
+                            servoIntake.setPower(1.0);
+                        } else {
+                            servoIntake.setPower(0);
+                        }
+                        break;
+
+                    case firstBall:
+                        servoIntake.setPower(1.0);
+                        if (ballTimer.seconds() > pushTime) {
+                            // First ball pushed, wait for launcher recovery
+                            intakeState = intakeState.recovery;
+                            servoIntake.setPower(0);
+                            recoveryTimer.reset();
+                        }
+                        break;
+
+                    case recovery:
+                        servoIntake.setPower(0);
+                        if (actualRPM > 0.90 * rpmTarget //recovery point %
+                                && recoveryTimer.seconds() > recoverTime) {
+                            // Launcher back to speed, push second ball
+                            intakeState = intakeState.secondBall;
+                            ballTimer.reset();
+                        }
+                        break;
+
+                    case secondBall:
+                        servoIntake.setPower(1.0);
+                        if (ballTimer.seconds() > pushTime) {
+                            // Done, go back to idle
+                            intakeState = intakeState.idle;
+                            servoIntake.setPower(0);
+                        }
+                        break;
+                }
+                telemetry.addData("Intake State", intakeState.toString());
+            } else {
+                servoIntake.setPower(0);
+                intakeState = intakeState.idle;
             }
 
+            lastSpoolUp = SpoolUp;
             telemetry.update();
         }
     }
@@ -213,12 +291,10 @@ public class launchtest extends LinearOpMode {
 
             }
         }   // end for() loop
-    }   // end method telemetryAprilTag()
-
+    }
     private  double distanceToRPM(double d) {
         return (10.63 * d) + 2197;
     }
-
     private double updatePDF(double targetTicksPerSec, double actualRPM, double dt) {
 
         // Convert actual RPM → ticks/sec so units match
@@ -241,10 +317,7 @@ public class launchtest extends LinearOpMode {
         previousError = error;
 
         double output = P + D + F;
-
-        // HARD CLAMP (critical)
         output = Math.max(-1.0, Math.min(1.0, output));
-
         return output;
     }
 
