@@ -17,7 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
 import java.util.List;
 
-@TeleOp(name="LinearOp Robot Main", group="Linear OpMode")
+@TeleOp(name="TeleOp Main", group="Linear OpMode")
 public class launchtest extends LinearOpMode {
     private static final boolean USE_WEBCAM = true;
     private AprilTagProcessor aprilTag;
@@ -29,7 +29,10 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx backLeftDrive = null;
     private DcMotorEx backRightDrive =  null;
     private DcMotorEx frontIntake = null;
+    private Servo servoGate = null;
     private CRServo servoIntake = null;
+    private DcMotorEx leftExtension = null;
+    private DcMotorEx rightExtension = null;
     private double rpmTarget = 0;
     private double kP = 0.006;//how fast, acceleration
     private double kD = 0.00002;//slow down before gets there
@@ -38,6 +41,8 @@ public class launchtest extends LinearOpMode {
     private double previousError = 0;
     private boolean lastSpoolUp = false;
     private boolean SpoolOn = false;
+    private boolean SlideState = false;
+    private boolean lastSlide = false;
     private double aimingKp = 0.02; //Coefficient for autoAlign, can be modified
     private enum IntakeState {
         idle,
@@ -50,7 +55,7 @@ public class launchtest extends LinearOpMode {
     private ElapsedTime recoveryTimer = new ElapsedTime();
     private double pushTime = 2.0; //Seconds for ball to be pushed, can be modified
     private double recoverTime = 1.0; //Servo rest time, can be modified
-    private double idleRPM = 1000; //idleRPM setting, can be modified
+    private double idleRPM = 1500; //idleRPM setting, can be modified
 
 
     @Override
@@ -64,6 +69,11 @@ public class launchtest extends LinearOpMode {
         backRightDrive = hardwareMap.get(DcMotorEx.class, "back_right_drive");
         frontIntake = hardwareMap.get(DcMotorEx.class, "front_intake");
         servoIntake = hardwareMap.get(CRServo.class, "servo_intake");
+        servoGate = hardwareMap.get(Servo.class, "servo_gate");
+        servoGate.setPosition(0.86);
+
+        leftExtension = hardwareMap.get(DcMotorEx.class, "left_extension");
+        rightExtension = hardwareMap.get(DcMotorEx.class, "right_extension");
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -72,6 +82,19 @@ public class launchtest extends LinearOpMode {
         launchMotor.setDirection(DcMotor.Direction.FORWARD);
         launchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontIntake.setDirection(DcMotor.Direction.REVERSE);
+
+        leftExtension.setDirection(DcMotor.Direction.REVERSE); //check
+        rightExtension.setDirection(DcMotor.Direction.FORWARD); //check
+
+        leftExtension.setTargetPosition(0);
+        rightExtension.setTargetPosition(0);
+
+        leftExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        leftExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
         telemetry.addData("Status", "Initialized!");
@@ -148,16 +171,9 @@ public class launchtest extends LinearOpMode {
             // Mid-Stage Intake Variables
             double IntakePower = gamepad1.left_trigger;
             boolean Eject = gamepad1.left_bumper;
-            boolean SpoolUp = gamepad1.a;
+            boolean SpoolUp = gamepad1.x;
 
-            // Intake Control
-            if (IntakePower > 0.8) {
-                frontIntake.setPower(1.0);
-            } else if (Eject) {
-                frontIntake.setPower(-1.0);
-            } else {
-                frontIntake.setPower(0);
-            }
+            boolean Slide = gamepad1.dpad_up;
 
             // RPM Conversions
             double velocityTarget = (rpmTarget / 60.0) * 28.0;
@@ -167,6 +183,11 @@ public class launchtest extends LinearOpMode {
             // Idle RPM Toggle Control
             if (SpoolUp && !lastSpoolUp) {
                 SpoolOn = !SpoolOn;
+            }
+
+            // Extension Toggle Control
+            if (Slide && !lastSlide) {
+                SlideState = !SlideState;
             }
 
             // Launch Motor Control
@@ -184,16 +205,17 @@ public class launchtest extends LinearOpMode {
                 previousError = 0;
             }
 
-
             telemetry.addData("RPM Target", "%.1f", rpmTarget);
             telemetry.addData("RPM Actual", "%.1f", actualRPM);
 
-            // Mid-Stage Intake Control
+            //  Intake Control
             if (IntakePower > 0.8) { // Might take this out
                 servoIntake.setPower(1.0);
+                frontIntake.setPower(1.0);
                 intakeState = intakeState.idle;
             } else if (Eject) {
                 servoIntake.setPower(-1.0);
+                frontIntake.setPower(-1.0);
                 intakeState = intakeState.idle;
             }
             else if (triggerPress > 0.8) {
@@ -204,24 +226,29 @@ public class launchtest extends LinearOpMode {
                             intakeState = intakeState.firstBall;
                             ballTimer.reset();
                             servoIntake.setPower(1.0);
+                            frontIntake.setPower(0.5);
+                            servoGate.setPosition(0.64); // Gate Up (0.38 for new gate)
                         } else {
                             servoIntake.setPower(0);
+                            frontIntake.setPower(0);
+                            servoGate.setPosition(0.86); // Gate Down
                         }
                         break;
 
                     case firstBall:
-                        servoIntake.setPower(1.0);
                         if (ballTimer.seconds() > pushTime) {
                             // First ball pushed, wait for launcher recovery
                             intakeState = intakeState.recovery;
-                            servoIntake.setPower(0);
+                            servoIntake.setPower(1);
+                            frontIntake.setPower(1);
+                            servoGate.setPosition(0.86); // Gate Down
                             recoveryTimer.reset();
                         }
                         break;
 
                     case recovery:
                         servoIntake.setPower(0);
-                        if (actualRPM > 0.90 * rpmTarget //recovery point %
+                        if (actualRPM > 0.95 * rpmTarget //recovery point %
                                 && recoveryTimer.seconds() > recoverTime) {
                             // Launcher back to speed, push second ball
                             intakeState = intakeState.secondBall;
@@ -231,20 +258,39 @@ public class launchtest extends LinearOpMode {
 
                     case secondBall:
                         servoIntake.setPower(1.0);
+                        frontIntake.setPower(0.5);
+                        servoGate.setPosition(0.64); // Gate Up (0.38 for new gate)
+                        //Gate Up
                         if (ballTimer.seconds() > pushTime) {
                             // Done, go back to idle
                             intakeState = intakeState.idle;
                             servoIntake.setPower(0);
+                            frontIntake.setPower(0);
+                            servoGate.setPosition(0.86); // Gate Down
                         }
                         break;
                 }
                 telemetry.addData("Intake State", intakeState.toString());
             } else {
                 servoIntake.setPower(0);
+                frontIntake.setPower(0);
+                servoGate.setPosition(0.86);
                 intakeState = intakeState.idle;
             }
 
+            // Extension Control
+            if (SlideState) {
+                slidePos(0); // figure this out
+            } else {
+                slidePos(0); // Full Retraction
+            }
+
             lastSpoolUp = SpoolUp;
+            lastSlide = Slide;
+
+            telemetry.addData("Servo Position", servoGate.getPosition());
+//            telemetry.addData("Slide Position", leftExtension.getCurrentPosition());
+//            telemetry.addData("Slide Position", rightExtension.getCurrentPosition());
             telemetry.update();
         }
     }
@@ -292,7 +338,7 @@ public class launchtest extends LinearOpMode {
             }
         }   // end for() loop
     }
-    private  double distanceToRPM(double d) {
+    private double distanceToRPM(double d) {
         return (10.63 * d) + 2197;
     }
     private double updatePDF(double targetTicksPerSec, double actualRPM, double dt) {
@@ -319,6 +365,12 @@ public class launchtest extends LinearOpMode {
         double output = P + D + F;
         output = Math.max(-1.0, Math.min(1.0, output));
         return output;
+    }
+    private void slidePos (int target) {
+        leftExtension.setTargetPosition(target);
+        leftExtension.setPower(0.8);
+        rightExtension.setTargetPosition(target);
+        rightExtension.setPower(0.8);
     }
 
 
