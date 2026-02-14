@@ -83,19 +83,21 @@ public class launchtest extends LinearOpMode {
         launchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontIntake.setDirection(DcMotor.Direction.REVERSE);
 
-        leftExtension.setDirection(DcMotor.Direction.REVERSE); //check
-        rightExtension.setDirection(DcMotor.Direction.FORWARD); //check
-
-        leftExtension.setTargetPosition(0);
-        rightExtension.setTargetPosition(0);
-
-        leftExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        leftExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        rightExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+//        leftExtension.setDirection(DcMotor.Direction.REVERSE); //check
+//        rightExtension.setDirection(DcMotor.Direction.FORWARD); //check
+//
+//        leftExtension.setTargetPosition(0);
+//        rightExtension.setTargetPosition(0);
+//
+//        leftExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        leftExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        leftExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//        rightExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        rightExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        rightExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//
+//        leftExtension.setPower(0.4);
+//        rightExtension.setPower(0.4);
 
         telemetry.addData("Status", "Initialized!");
         telemetry.update();
@@ -226,8 +228,8 @@ public class launchtest extends LinearOpMode {
                             intakeState = intakeState.firstBall;
                             ballTimer.reset();
                             servoIntake.setPower(1.0);
-                            frontIntake.setPower(0.5);
-                            servoGate.setPosition(0.64); // Gate Up (0.38 for new gate)
+                            frontIntake.setPower(0.7);
+                            servoGate.setPosition(1); // Gate Up (0.38 for new gate)
                         } else {
                             servoIntake.setPower(0);
                             frontIntake.setPower(0);
@@ -247,9 +249,9 @@ public class launchtest extends LinearOpMode {
                         break;
 
                     case recovery:
-                        servoIntake.setPower(0);
                         if (actualRPM > 0.95 * rpmTarget //recovery point %
-                                && recoveryTimer.seconds() > recoverTime) {
+//                                && recoveryTimer.seconds() > recoverTime
+                        ) {
                             // Launcher back to speed, push second ball
                             intakeState = intakeState.secondBall;
                             ballTimer.reset();
@@ -258,8 +260,8 @@ public class launchtest extends LinearOpMode {
 
                     case secondBall:
                         servoIntake.setPower(1.0);
-                        frontIntake.setPower(0.5);
-                        servoGate.setPosition(0.64); // Gate Up (0.38 for new gate)
+                        frontIntake.setPower(0.7);
+                        servoGate.setPosition(1); // Gate Up (0.38 for new gate)
                         //Gate Up
                         if (ballTimer.seconds() > pushTime) {
                             // Done, go back to idle
@@ -279,11 +281,8 @@ public class launchtest extends LinearOpMode {
             }
 
             // Extension Control
-            if (SlideState) {
-                slidePos(0); // figure this out
-            } else {
-                slidePos(0); // Full Retraction
-            }
+//            slidePos(SlideState ? 2000 : 0);
+//            syncSlides();
 
             lastSpoolUp = SpoolUp;
             lastSlide = Slide;
@@ -366,12 +365,32 @@ public class launchtest extends LinearOpMode {
         output = Math.max(-1.0, Math.min(1.0, output));
         return output;
     }
-    private void slidePos (int target) {
-        leftExtension.setTargetPosition(target);
-        leftExtension.setPower(0.8);
-        rightExtension.setTargetPosition(target);
-        rightExtension.setPower(0.8);
-    }
-
-
+//    private void slidePos (int target) {
+//        leftExtension.setTargetPosition(target);
+//        rightExtension.setTargetPosition(target);
+//    }
+//    private void syncSlides() {
+//        int leftPos    = leftExtension.getCurrentPosition();
+//        int rightPos   = rightExtension.getCurrentPosition();
+//        int target     = leftExtension.getTargetPosition();
+//
+//        boolean atTarget = Math.abs(leftPos - target) < 20
+//                && Math.abs(rightPos - target) < 20;
+//
+//        double basePower = atTarget ? 0.4 : 0.9;
+//
+//        int drift = leftPos - rightPos;
+//        if (Math.abs(drift) > 25) {
+//            if (drift > 0) {
+//                leftExtension.setPower(Math.max(0.0, basePower - 0.08));
+//                rightExtension.setPower(Math.min(1.0, basePower + 0.08));
+//            } else {
+//                leftExtension.setPower(Math.min(1.0, basePower + 0.08));
+//                rightExtension.setPower(Math.max(0.0, basePower - 0.08));
+//            }
+//        } else {
+//            leftExtension.setPower(basePower);
+//            rightExtension.setPower(basePower);
+//        }
+//    }
 }
