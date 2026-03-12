@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode; // ← update to match your package
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
@@ -13,7 +15,15 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+
+import java.util.List;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │  redTowerStart6 — 6-Ball PedroPathing Autonomous  (RED SIDE)                │
@@ -41,6 +51,9 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "Red Tower Start 6-Ball", group = "Competition")
 public class redTowerStart6 extends OpMode {
+    private static final boolean USE_WEBCAM = true;
+    private AprilTagProcessor aprilTag;
+    private VisionPortal visionPortal;
 
     // ═══════════════════════════════════════════════════════
     //  PedroPathing
@@ -73,7 +86,7 @@ public class redTowerStart6 extends OpMode {
     // ═══════════════════════════════════════════════════════
     //  RPM settings
     // ═══════════════════════════════════════════════════════
-    private static final double SCORE_DISTANCE = 49.0;
+    private static final double SCORE_DISTANCE = 49;
     private static final double IDLE_RPM       = 1500;
     private double rpmTarget = IDLE_RPM;
 
@@ -82,10 +95,10 @@ public class redTowerStart6 extends OpMode {
     // ═══════════════════════════════════════════════════════
     private static final double GATE_CLOSED    = 0.86;
     private static final double GATE_OPEN      = 1.0;
-    private static final double PUSH_TIME      = 2.5;
+    private static final double PUSH_TIME      = 2.3;
     private static final double INTAKE_POWER   = 1.0;
     private static final double INTAKE_FEED    = 0.7;
-    private static final double INTAKE_DWELL   = 1.2;
+    private static final double INTAKE_DWELL   = 0.5;
     private static final double SWEEP_SPEED    = 0.35;
     private static final double APPROACH_SPEED = 0.6;
     private static final double FULL_SPEED     = 1.0;
@@ -118,11 +131,11 @@ public class redTowerStart6 extends OpMode {
     //  Blue r2Lt   (32.052, 60.209, 180°) → Red (111.948, 60.209, 0°)
     // ═══════════════════════════════════════════════════════
     private final Pose startPose     = new Pose(115.000,  127.000, Math.toRadians(45));
-    private final Pose scorePose     = new Pose(88.000,   100.000, Math.toRadians(45));
-    private final Pose row1EntryPose = new Pose(77.965,   83.583,  Math.toRadians(0));  // entry side (right of field)
-    private final Pose row1EndPose   = new Pose(116.209,  83.661,  Math.toRadians(0));  // sweep end  (left of field)
-    private final Pose row2EntryPose = new Pose(78.591,   60.209,  Math.toRadians(0));
-    private final Pose row2EndPose   = new Pose(111.948,  60.209,  Math.toRadians(0));
+    private final Pose scorePose     = new Pose(88.000,   97.000, Math.toRadians(45));
+    private final Pose row1EntryPose = new Pose(85.965,   83.583,  Math.toRadians(0));  // entry side (right of field)
+    private final Pose row1EndPose   = new Pose(124.209,  83.661,  Math.toRadians(0));  // sweep end  (left of field)
+    private final Pose row2EntryPose = new Pose(85.591,   60.209,  Math.toRadians(0));
+    private final Pose row2EndPose   = new Pose(124.948,  60.209,  Math.toRadians(0));
 
     // ═══════════════════════════════════════════════════════
     //  Paths
@@ -486,6 +499,7 @@ public class redTowerStart6 extends OpMode {
 
     @Override
     public void init() {
+        initAprilTag();
         pathTimer   = new Timer();
         opmodeTimer = new ElapsedTime();
         opmodeTimer.reset();
@@ -565,6 +579,18 @@ public class redTowerStart6 extends OpMode {
 
         follower.update();
         runLauncher(dt);
+
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        telemetryAprilTag();
+        for (AprilTagDetection detection : currentDetections) {
+            if (detection != null && detection.robotPose != null) {
+                double x = currentDetections.get(0).robotPose.getPosition().x;
+                double y = currentDetections.get(0).robotPose.getPosition().y;
+                double head = (currentDetections.get(0).robotPose.getOrientation().getYaw() + 630) % 360 - 180;
+
+//                follower.setPose(new Pose(x, y, head, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE));
+            }
+        }
 //        syncSlides();
 
         autonomousPathUpdate();
@@ -595,5 +621,49 @@ public class redTowerStart6 extends OpMode {
         frontIntake.setPower(0);
         servoIntake.setPower(0);
         servoGate.setPosition(GATE_CLOSED);
+    }
+    private void initAprilTag() {
+        aprilTag = new AprilTagProcessor.Builder()
+                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+//                .setTagSize(0.1524) // meters (6 inches)
+                .build();
+
+
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+
+        if (USE_WEBCAM) {
+            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+        } else {
+            builder.setCamera(BuiltinCameraDirection.BACK);
+        }
+
+        builder.enableLiveView(true);
+
+        builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
+
+        builder.setAutoStopLiveView(false);
+
+        builder.addProcessor(aprilTag);
+
+        visionPortal = builder.build();
+
+    }
+    private void telemetryAprilTag() {
+
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        telemetry.addData("# AprilTags Detected", currentDetections.size());
+
+        // Step through the list of detections and display info for each one.
+        for (AprilTagDetection detection : currentDetections) {
+            try {
+                if (detection != null) {
+                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                }
+            } catch (Exception e) {
+                telemetry.addLine(String.format("Error"));
+
+            }
+        }   // end for() loop
     }
 }

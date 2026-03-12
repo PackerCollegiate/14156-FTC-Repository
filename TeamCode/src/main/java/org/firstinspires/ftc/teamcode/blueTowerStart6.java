@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode; // ← update to match your package
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
@@ -13,7 +15,15 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+
+import java.util.List;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │  DecodeAuto — 6-Ball PedroPathing Autonomous                                │
@@ -37,9 +47,11 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 // │            shot RPM before each scoring stop.                               │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-@Autonomous(name = "Decode Auto 6-Ball", group = "Competition")
+@Autonomous(name = "Blue Tower Start 6-Ball", group = "Competition")
 public class blueTowerStart6 extends OpMode {
-
+    private static final boolean USE_WEBCAM = true;
+    private AprilTagProcessor aprilTag;
+    private VisionPortal visionPortal;
     // ═══════════════════════════════════════════════════════
     //  PedroPathing
     // ═══════════════════════════════════════════════════════
@@ -73,7 +85,7 @@ public class blueTowerStart6 extends OpMode {
     //  distanceToRPM(d) = 10.63*d + 2197  (your teleop formula)
     //  Set SCORE_DISTANCE to the measured inches from scorePose to goal.
     // ═══════════════════════════════════════════════════════
-    private static final double SCORE_DISTANCE = 49.0; // measured ~49 inches from scorePose to goal
+    private static final double SCORE_DISTANCE = 49; // measured ~49 inches from scorePose to goal
     private static final double IDLE_RPM       = 1500;
     private double rpmTarget = IDLE_RPM;
 
@@ -82,12 +94,12 @@ public class blueTowerStart6 extends OpMode {
     // ═══════════════════════════════════════════════════════
     private static final double GATE_CLOSED  = 0.86;
     private static final double GATE_OPEN    = 1.0;
-    private static final double PUSH_TIME    = 2.5;  // seconds per ball push — increased to help second ball clear ramp
+    private static final double PUSH_TIME    = 2.3;  // seconds per ball push — increased to help second ball clear ramp
     private static final double INTAKE_POWER = 1.0;  // collection power
     private static final double INTAKE_FEED  = 0.7;  // feed power while shooting
-    private static final double INTAKE_DWELL = 1.2;  // seconds to dwell at row end
-    private static final double SWEEP_SPEED  = 0.35; // max follower power during ball sweep — slow enough to intake not push
-    private static final double APPROACH_SPEED = 0.6; // max power approaching the row — gives odometry time to correct
+    private static final double INTAKE_DWELL = 0.5;  // seconds to dwell at row end
+    private static final double SWEEP_SPEED  = 0.5; // max follower power during ball sweep — slow enough to intake not push
+    private static final double APPROACH_SPEED = 0.7; // max power approaching the row — gives odometry time to correct
     private static final double FULL_SPEED   = 1.0;  // full power for all other paths
 
     // ═══════════════════════════════════════════════════════
@@ -115,11 +127,11 @@ public class blueTowerStart6 extends OpMode {
     //  Field poses  (exact values from your Pedro Pathing visualizer)
     // ═══════════════════════════════════════════════════════
     private final Pose startPose     = new Pose(29.000, 127.000, Math.toRadians(135));
-    private final Pose scorePose     = new Pose(56.000, 100.000, Math.toRadians(135));
-    private final Pose row1RightPose = new Pose(66.035, 83.583,  Math.toRadians(180));
-    private final Pose row1LeftPose  = new Pose(27.791, 83.661,  Math.toRadians(180));
-    private final Pose row2RightPose = new Pose(65.409, 60.209,  Math.toRadians(180));
-    private final Pose row2LeftPose  = new Pose(32.052, 60.209,  Math.toRadians(180));
+    private final Pose scorePose     = new Pose(56.000, 97.000, Math.toRadians(135));
+    private final Pose row1RightPose = new Pose(57.035, 83.583,  Math.toRadians(180));
+    private final Pose row1LeftPose  = new Pose(20.791, 80.661,  Math.toRadians(180));
+    private final Pose row2RightPose = new Pose(57.409, 60.209,  Math.toRadians(180));
+    private final Pose row2LeftPose  = new Pose(20.052, 57.209,  Math.toRadians(180));
 
     // ═══════════════════════════════════════════════════════
     //  Paths  (7 paths, matching your visualizer export exactly)
@@ -585,6 +597,7 @@ public class blueTowerStart6 extends OpMode {
         pathTimer   = new Timer();
         opmodeTimer = new ElapsedTime();
         opmodeTimer.reset();
+        initAprilTag();
 
         // ── Hardware map ──────────────────────────────────────────────────
         launchMotor    = hardwareMap.get(DcMotorEx.class, "launch_motor");
@@ -676,6 +689,19 @@ public class blueTowerStart6 extends OpMode {
         runLauncher(dt);          // launcher PID — idle or shot speed
 //        syncSlides();             // slide gravity hold + sync
 
+
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        telemetryAprilTag();
+        for (AprilTagDetection detection : currentDetections) {
+            if (detection != null && detection.robotPose != null) {
+                double x = currentDetections.get(0).robotPose.getPosition().x;
+                double y = currentDetections.get(0).robotPose.getPosition().y;
+                double head = (currentDetections.get(0).robotPose.getOrientation().getYaw()+630)%360-180;
+
+//                follower.setPose(new Pose(x, y, head, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE));
+            }
+        }
+
         // ── State machine ──────────────────────────────────────────────────
         autonomousPathUpdate();
 
@@ -707,5 +733,49 @@ public class blueTowerStart6 extends OpMode {
         servoIntake.setPower(0);
         servoGate.setPosition(GATE_CLOSED);
         // Slides keep their last power so plate doesn't drop on stop
+    }
+    private void initAprilTag() {
+        aprilTag = new AprilTagProcessor.Builder()
+                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+//                .setTagSize(0.1524) // meters (6 inches)
+                .build();
+
+
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+
+        if (USE_WEBCAM) {
+            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+        } else {
+            builder.setCamera(BuiltinCameraDirection.BACK);
+        }
+
+        builder.enableLiveView(true);
+
+        builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
+
+        builder.setAutoStopLiveView(false);
+
+        builder.addProcessor(aprilTag);
+
+        visionPortal = builder.build();
+
+    }
+    private void telemetryAprilTag() {
+
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        telemetry.addData("# AprilTags Detected", currentDetections.size());
+
+        // Step through the list of detections and display info for each one.
+        for (AprilTagDetection detection : currentDetections) {
+            try {
+                if (detection != null) {
+                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                }
+            } catch (Exception e) {
+                telemetry.addLine(String.format("Error"));
+
+            }
+        }   // end for() loop
     }
 }

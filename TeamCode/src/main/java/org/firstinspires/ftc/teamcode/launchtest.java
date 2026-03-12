@@ -134,9 +134,9 @@ public class launchtest extends LinearOpMode {
 
             // Driving Control
             double max;
-            double axial   = -gamepad1.left_stick_y;
-            double lateral =  gamepad1.left_stick_x;
-            double yaw     =  gamepad1.right_stick_x;
+            double axial   = -gamepad1.left_stick_y * 0.7;
+            double lateral =  gamepad1.left_stick_x * 0.85;
+            double yaw     =  gamepad1.right_stick_x * 0.6;
 
             // Auto-Alignment
             if (triggerPress > 0.8 && !currentDetections.isEmpty()) {
@@ -297,6 +297,7 @@ public class launchtest extends LinearOpMode {
     private void initAprilTag() {
         aprilTag = new AprilTagProcessor.Builder()
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
 //                .setTagSize(0.1524) // meters (6 inches)
                 .build();
 
@@ -330,6 +331,7 @@ public class launchtest extends LinearOpMode {
             try {
                 if (detection != null) {
                     telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                    telemetry.addLine(String.format("XYH %6.1f %6.1f %6.1f ", detection.robotPose.getPosition().x, detection.robotPose.getPosition().y, (currentDetections.get(0).robotPose.getOrientation().getYaw()+630)%360-180));
                 }
             } catch (Exception e) {
                 telemetry.addLine(String.format("Error"));
