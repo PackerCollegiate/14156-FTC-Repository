@@ -31,8 +31,6 @@ public class launchtest extends LinearOpMode {
     private DcMotorEx frontIntake = null;
     private Servo servoGate = null;
     private CRServo servoIntake = null;
-    private DcMotorEx leftExtension = null;
-    private DcMotorEx rightExtension = null;
     private double rpmTarget = 0;
     private double kP = 0.006;//how fast, acceleration
     private double kD = 0.00002;//slow down before gets there
@@ -44,6 +42,7 @@ public class launchtest extends LinearOpMode {
     private boolean SlideState = false;
     private boolean lastSlide = false;
     private double aimingKp = 0.02; //Coefficient for autoAlign, can be modified
+    private int TICKS_PER_REVOLUTION = 28;
     private enum IntakeState {
         idle,
         firstBall,
@@ -71,9 +70,6 @@ public class launchtest extends LinearOpMode {
         servoIntake = hardwareMap.get(CRServo.class, "servo_intake");
         servoGate = hardwareMap.get(Servo.class, "servo_gate");
         servoGate.setPosition(0.86);
-
-        leftExtension = hardwareMap.get(DcMotorEx.class, "left_extension");
-        rightExtension = hardwareMap.get(DcMotorEx.class, "right_extension");
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -178,9 +174,9 @@ public class launchtest extends LinearOpMode {
             boolean Slide = gamepad1.dpad_up;
 
             // RPM Conversions
-            double velocityTarget = (rpmTarget / 60.0) * 28.0;
+            double velocityTarget = (rpmTarget / 60.0) * TICKS_PER_REVOLUTION;
             double actualVelocity = launchMotor.getVelocity();
-            double actualRPM = (actualVelocity * 60.0) / 28.0;
+            double actualRPM = (actualVelocity * 60.0) / TICKS_PER_REVOLUTION;
 
             // Idle RPM Toggle Control
             if (SpoolUp && !lastSpoolUp) {
@@ -198,7 +194,7 @@ public class launchtest extends LinearOpMode {
                 launchMotor.setPower(power);
                 telemetry.addData("Power", "%.1f", power);
             } else if (SpoolOn) {
-                double idleTarget = (idleRPM / 60) * 28.0;
+                double idleTarget = (idleRPM / 60) * TICKS_PER_REVOLUTION;
                 double power = updatePDF(idleTarget, actualRPM, dt);
                 launchMotor.setPower(power);
                 telemetry.addData("Power (idle)", "%.1f", power);
@@ -345,7 +341,7 @@ public class launchtest extends LinearOpMode {
     private double updatePDF(double targetTicksPerSec, double actualRPM, double dt) {
 
         // Convert actual RPM → ticks/sec so units match
-        double actualTicksPerSec = (actualRPM / 60.0) * 28.0;
+        double actualTicksPerSec = (actualRPM / 60.0) * TICKS_PER_REVOLUTION;
 
         // Error in ticks/sec
         double error = targetTicksPerSec - actualTicksPerSec;
