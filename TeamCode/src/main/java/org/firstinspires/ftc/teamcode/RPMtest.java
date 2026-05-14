@@ -167,14 +167,14 @@ public class RPMtest extends LinearOpMode {
 
                     case IDLE:
 
-                        if (actualRPM > 0.9 * rpmTarget) {
+                        if (actualRPM > 0.97 * rpmTarget) {
 
                             intakeState = IntakeState.FIRST_BALL;
 
                             ballTimer.reset();
 
-                            servoIntake.setPower(1.0);
-                            frontIntake.setPower(0.7);
+//                            servoIntake.setPower(1.0);
+//                            frontIntake.setPower(0.7);
 
                             servoGate.setPosition(1.0);
 
@@ -192,10 +192,10 @@ public class RPMtest extends LinearOpMode {
 
                         if (ballTimer.seconds() > pushTime) {
 
-                            intakeState = IntakeState.RECOVERY;
+                            intakeState = IntakeState.IDLE;
 
-                            servoIntake.setPower(1.0);
-                            frontIntake.setPower(1.0);
+//                            servoIntake.setPower(1.0);
+//                            frontIntake.setPower(1.0);
 
                             servoGate.setPosition(0.86);
 
@@ -204,35 +204,35 @@ public class RPMtest extends LinearOpMode {
 
                         break;
 
-                    case RECOVERY:
-
-                        if (actualRPM > 0.95 * rpmTarget) {
-
-                            intakeState = IntakeState.SECOND_BALL;
-
-                            ballTimer.reset();
-                        }
-
-                        break;
-
-                    case SECOND_BALL:
-
-                        servoIntake.setPower(1.0);
-                        frontIntake.setPower(0.7);
-
-                        servoGate.setPosition(1.0);
-
-                        if (ballTimer.seconds() > pushTime) {
-
-                            intakeState = IntakeState.IDLE;
-
-                            servoIntake.setPower(0);
-                            frontIntake.setPower(0);
-
-                            servoGate.setPosition(0.86);
-                        }
-
-                        break;
+//                    case RECOVERY:
+//
+//                        if (actualRPM > 0.95 * rpmTarget) {
+//
+//                            intakeState = IntakeState.SECOND_BALL;
+//
+//                            ballTimer.reset();
+//                        }
+//
+//                        break;
+//
+//                    case SECOND_BALL:
+//
+//                        servoIntake.setPower(1.0);
+//                        frontIntake.setPower(0.7);
+//
+//                        servoGate.setPosition(1.0);
+//
+//                        if (ballTimer.seconds() > pushTime) {
+//
+//                            intakeState = IntakeState.IDLE;
+//
+//                            servoIntake.setPower(0);
+//                            frontIntake.setPower(0);
+//
+//                            servoGate.setPosition(0.86);
+//                        }
+//
+//                        break;
                 }
 
                 telemetry.addData("Intake State", intakeState.toString());
@@ -258,11 +258,11 @@ public class RPMtest extends LinearOpMode {
 
             // Edge detection
             if (powerUp && !lastPowerUp) {
-                rpmTarget += 50;
+                rpmTarget += 100;
             }
 
             if (powerDown && !lastPowerDown) {
-                rpmTarget -= 50;
+                rpmTarget -= 100;
             }
 
             lastPowerUp = powerUp;
